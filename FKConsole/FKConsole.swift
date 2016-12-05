@@ -17,17 +17,26 @@ class FKConsole: UIView {
     static let console = FKConsole.init(frame: CGRect(x:0, y:0, width:SCREEN_WIDTH, height:SCREEN_HEIGHT))
     
     // MARK:- register functions
+    
+    /// Register FKConsole to window (Double tap with three fingers to toggle)
+    ///
+    /// - parameter window: The window will be registered
     public class func register(window: UIWindow?) {
-        let showGesture = UISwipeGestureRecognizer.init()
-        showGesture.direction = UISwipeGestureRecognizerDirection.up
+        let showGesture = UITapGestureRecognizer.init()
+        showGesture.numberOfTapsRequired = 2
         showGesture.numberOfTouchesRequired = 3
-        let hideGesture = UISwipeGestureRecognizer.init()
-        hideGesture.direction = UISwipeGestureRecognizerDirection.down
+        let hideGesture = UITapGestureRecognizer.init()
+        hideGesture.numberOfTapsRequired = 2
         hideGesture.numberOfTouchesRequired = 3
         register(window: window, showGesture: showGesture, hideGesture: hideGesture)
     }
-    
-    public class func register(window wd: UIWindow?, showGesture: UIGestureRecognizer!, hideGesture: UIGestureRecognizer!) {
+
+    /// Register FKConsole to window
+    ///
+    /// - parameter window: The window will be registered
+    /// - parameter showGesture: The gesture to show FKConsole
+    /// - parameter hideGesture: The gesture to hide FKConsole (Don't use SWIPE gesture for hideGesture, it won't be work)
+    public class func register(window wd: UIWindow?, showGesture: UIGestureRecognizer?, hideGesture: UIGestureRecognizer?) {
         guard let window = wd else {
             removeConsole()
             return
@@ -35,25 +44,27 @@ class FKConsole: UIView {
         
         // set variables
         console.shownWindow = window
-        console.showGesture = showGesture
-        console.hideGesture = hideGesture
         
         // deal with gestures
-        showGesture.addTarget(console, action: #selector(show))
-        hideGesture.addTarget(console, action: #selector(hide))
-        window.addGestureRecognizer(showGesture)
-//        console.logView.addHideGesture(gesture: hideGesture)
-//        window.addGestureRecognizer(hideGesture)
+        if showGesture != nil {
+            console.showGesture = showGesture
+            showGesture!.addTarget(console, action: #selector(show))
+            window.addGestureRecognizer(showGesture!)
+        }
+        if hideGesture != nil {
+            console.hideGesture = hideGesture
+            hideGesture!.addTarget(console, action: #selector(hide))
+            console.logView.addHideGesture(gesture: hideGesture!)
+        }
     }
     
-    // remove function
+    /// Remove FKConsole from registered window
     public class func removeConsole() {
         guard let window = console.shownWindow else {
             return
         }
         window.removeGestureRecognizer(console.showGesture)
-//        console.logView.removeHideGesture(gesture: console.hideGesture)
-//        window.removeGestureRecognizer(console.hideGesture)
+        console.logView.removeHideGesture(gesture: console.hideGesture)
         console.shownWindow = nil
     }
     
@@ -61,6 +72,7 @@ class FKConsole: UIView {
     private var shownWindow: UIWindow?
     private var showGesture: UIGestureRecognizer!
     private var hideGesture: UIGestureRecognizer!
+    private var animating: Bool! = false
     
     // Views
     private var _logView: LogView!
@@ -94,10 +106,17 @@ class FKConsole: UIView {
     }
     
     // MARK:- functions
+    
+    /// Show FKConsole
     final func show() {
+        if animating || superview != nil {
+            return
+        }
         guard let window = self.shownWindow else {
             return
         }
+        
+        self.animating = true
         
         self.frame = CGRect(x: 0, y: SCREEN_HEIGHT, width: SCREEN_WIDTH, height: SCREEN_HEIGHT)
         logView.frame = self.bounds
@@ -105,20 +124,33 @@ class FKConsole: UIView {
         window.addSubview(self)
         UIView.animate(withDuration: 0.3, animations: {
             self.frame = CGRect(x: 0, y: 0, width: SCREEN_WIDTH, height: SCREEN_HEIGHT)
+        }, completion: { (finished) in
+            self.animating = false
         })
     }
     
+    /// Hide FKConsole
     final func hide() {
+        if animating || superview == nil {
+            return
+        }
+        
+        self.animating = true
+        
         UIView.animate(withDuration: 0.3, animations: {
             self.frame = CGRect(x: 0, y: SCREEN_HEIGHT, width: SCREEN_WIDTH, height: SCREEN_HEIGHT)
         }, completion: { (finished) in
+            self.animating = false
             self.removeFromSuperview()
         })
     }
     
+    /// Print Log object to FKConsole and Console in Xcode
+    ///
+    /// - parameter log: Log object
     public func addLog(_ log: Log!) {
         logView.addLog(log)
-        print(log.log)
+        print(log.info, log.log, separator: "", terminator: "\n")
     }
 }
 
@@ -161,12 +193,27 @@ fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
     // MARK:- LogView functions
     public func addLog(_ log: Log!) {
         logs.append(log)
-        tableView.reloadData()
+        let indexPath = IndexPath(row: logs.count - 1, section: 0)
+        tableView.insertRows(at: [indexPath], with: UITableViewRowAnimation.none)
     }
     
     public func clearLog() {
         logs.removeAll()
         tableView.reloadData()
+    }
+    
+    fileprivate func addHideGesture(gesture: UIGestureRecognizer!) {
+        guard let ges = gesture else {
+            return
+        }
+        addGestureRecognizer(ges)
+    }
+    
+    fileprivate func removeHideGesture(gesture: UIGestureRecognizer!) {
+        guard let ges = gesture else {
+            return
+        }
+        removeGestureRecognizer(ges)
     }
     
     // return the color of Log.Level
@@ -209,16 +256,35 @@ fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
             label?.numberOfLines = 0
             cell?.addSubview(label!)
         }
-        label!.frame = CGRect(x: 0, y: 0, width: SCREEN_WIDTH, height: logHeight(log: log.log))
-        label!.text = log.log
+        label!.frame = CGRect(x: 0, y: 0, width: SCREEN_WIDTH, height: logHeight(log: log.info + log.log))
         label!.textColor = logColor(level: log.level)
+        let attrStr = NSMutableAttributedString.init(string: log.info + log.log)
+        attrStr.addAttribute(NSForegroundColorAttributeName, value: UIColor.darkGray, range: NSRange(location: 0, length: log.info.lengthOfBytes(using: String.Encoding.utf8)))
+        label!.attributedText = attrStr
         cell?.backgroundColor = UIColor.black
         return cell!
     }
     
     public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return logHeight(log: logs[indexPath.row].log)
+        return logHeight(log: logs[indexPath.row].info + logs[indexPath.row].log)
     }
+}
+
+// MARK:- Print
+/// Override to intercept print method
+/// It's not recommended, please use Log.v(xxx) instead.
+/// If you don't want to use this method, please remove it.
+public func print(_ items: Any...) {
+    var text = ""
+    for index in 1...items.count {
+        text.append(String(describing: items[index - 1]))
+        if index == items.count - 1 {
+            text.append("\n")
+        } else {
+            text.append(" ")
+        }
+    }
+    Log.v(text)
 }
 
 // MARK:- Log
@@ -232,29 +298,63 @@ public class Log: NSObject {
         case error
     }
     
-    public class func v(_ log: String?) {
-        addLog(log, level: Log.Level.verbose)
+    /// Print verbose log (white)
+    ///
+    /// - parameter log: log content string
+    public class func v(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
+        let info = formatInfo(fileName: fileName, function: function, lineNumber: lineNumber)
+        addLog(log, info: info, level: Log.Level.verbose)
     }
-    public class func d(_ log: String?) {
-        addLog(log, level: Log.Level.debug)
+    /// Print debug log (blue)
+    ///
+    /// - parameter log: log content string
+    public class func d(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
+        let info = formatInfo(fileName: fileName, function: function, lineNumber: lineNumber)
+        addLog(log, info: info, level: Log.Level.debug)
     }
-    public class func i(_ log: String?) {
-        addLog(log, level: Log.Level.info)
+    /// Print info log (green)
+    ///
+    /// - parameter log: log content string
+    public class func i(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
+        let info = formatInfo(fileName: fileName, function: function, lineNumber: lineNumber)
+        addLog(log, info: info, level: Log.Level.info)
     }
-    public class func w(_ log: String?) {
-        addLog(log, level: Log.Level.warning)
+    /// Print warning log (yellow)
+    ///
+    /// - parameter log: log content string
+    public class func w(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
+        let info = formatInfo(fileName: fileName, function: function, lineNumber: lineNumber)
+        addLog(log, info: info, level: Log.Level.warning)
     }
-    public class func e(_ log: String?) {
-        addLog(log, level: Log.Level.error)
+    /// Print error log (red)
+    ///
+    /// - parameter log: log content string
+    public class func e(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
+        let info = formatInfo(fileName: fileName, function: function, lineNumber: lineNumber)
+        addLog(log, info: info, level: Log.Level.error)
     }
-    private class func addLog(_ log: String?, level: Log.Level!) {
-        let log = Log(log: log, level: level)
+    
+    private class func addLog(_ log: String?, info: String!, level: Log.Level!) {
+        let log = Log(info: info, log: log, level: level)
         FKConsole.console.addLog(log)
     }
     
+    private class func formatInfo(fileName: String!, function: String!, lineNumber: Int!) -> String! {
+        
+        let className = (fileName as NSString).pathComponents.last!.replacingOccurrences(of: "swift", with: "")
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
+        let date = fmt.string(from: Date())
+        let text = date + " " + className + function + " [line " + String(lineNumber) + "]:\n"
+        
+        return text
+    }
+    
+    var info: String!
     var log: String!
     var level: Log.Level!
-    init(log l: String?, level lv: Log.Level!) {
+    init(info i: String!, log l: String?, level lv: Log.Level!) {
+        info = i
         level = lv
         guard let log_t = l else {
             self.log = ""

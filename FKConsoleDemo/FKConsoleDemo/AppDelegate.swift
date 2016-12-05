@@ -17,8 +17,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
-        // register FKConsole
+        // register FKConsole with default gesture (Double tap with three fingers to toggle)
         FKConsole.register(window: self.window)
+        
+        // Register FKConsole with custom gesture
+        /*
+        let showGesture = UITapGestureRecognizer.init()
+        showGesture.numberOfTapsRequired = 2
+        showGesture.numberOfTouchesRequired = 3
+        let hideGesture = UILongPressGestureRecognizer.init()
+        hideGesture.minimumPressDuration = 1.0
+        hideGesture.numberOfTouchesRequired = 3
+        FKConsole.register(window: window, showGesture: showGesture, hideGesture: hideGesture)
+        */
         return true
     }
 
