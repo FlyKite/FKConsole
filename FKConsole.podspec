@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
   s.name         = "FKConsole"
   s.version      = "1.0.0"
-  s.summary      = "A short description of FKConsole."
+  s.summary      = "A convenient console view."
   s.homepage     = "https://github.com/FlyKite/FKConsole"
   s.license      = { :type => "MIT", :file => "LICENSE" }
   s.author             = { "FlyKite" => "DogeFlyKite@gmail.com" }
