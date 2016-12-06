@@ -25,7 +25,7 @@ class ViewController: UIViewController {
         self.view.addSubview(button)
         
         let tips = UILabel.init(frame: CGRect(x: 50, y: 200, width: 250, height: 100))
-        tips.text = "Swipe up with 3 fingers to show console window, you should register FKConsole before use it (see AppDelegate)."
+        tips.text = "Double tap with 3 fingers to show console window, you should register FKConsole before use it (see AppDelegate)."
         tips.numberOfLines = 0
         self.view.addSubview(tips)
         

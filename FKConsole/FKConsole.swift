@@ -30,7 +30,7 @@ class FKConsole: UIView {
         hideGesture.numberOfTouchesRequired = 3
         register(window: window, showGesture: showGesture, hideGesture: hideGesture)
     }
-
+    
     /// Register FKConsole to window
     ///
     /// - parameter window: The window will be registered
@@ -107,7 +107,7 @@ class FKConsole: UIView {
     
     // MARK:- functions
     
-    /// Show FKConsole
+    /// Show FKConsole in registered window
     final func show() {
         if animating || superview != nil {
             return

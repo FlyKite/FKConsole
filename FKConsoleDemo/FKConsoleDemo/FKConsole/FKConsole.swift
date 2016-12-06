@@ -107,7 +107,7 @@ class FKConsole: UIView {
     
     // MARK:- functions
     
-    /// Show FKConsole
+    /// Show FKConsole in registered window
     final func show() {
         if animating || superview != nil {
             return
