@@ -1,15 +1,23 @@
 # FKConsole
 A convenient console view
 
+Features
+---
+- [x] Easy to use
+- [x] Convenient to debug
+- [x] Don't need to change key window
+- [x] Easy to distinguish between different Log Levels
+- [x] Log with class and function info, easy to find in project
+
 Requirment
 ---
-iOS 8.0 or later
+iOS 8.0 or later  
 Swift 3.0 or later
 
 Install
 ---
 Copy FKConsole.swift to your project  
-~~install by cocoapods will be available soon
+~~install by cocoapods will be available soon~~
 
 How to use
 ---
@@ -72,6 +80,7 @@ public class Log: NSObject {
 
 Example
 ---
+Warning: print function is not recommended! It won't print class and function where you call `print()`.
 ```Swift
     print("Print a verbose log.")
     Log.v("This is a verbose log.")
@@ -80,3 +89,10 @@ Example
     Log.w("This is a warning log.")
     Log.e("This is a error log.")
 ```
+<p>
+    <img src="example.PNG" alt="example" width="375" />
+</p>
+
+License
+---
+All source code is licensed under [MIT License](https://github.com/FlyKite/FKConsole/blob/master/LICENSE)
