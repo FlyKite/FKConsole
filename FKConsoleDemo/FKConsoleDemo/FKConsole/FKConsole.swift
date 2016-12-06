@@ -12,7 +12,7 @@ import UIKit
 fileprivate let SCREEN_WIDTH = UIScreen.main.bounds.width
 fileprivate let SCREEN_HEIGHT = UIScreen.main.bounds.height
 
-class FKConsole: UIView {
+public class FKConsole: UIView {
     // MARK:- singleton
     static let console = FKConsole.init(frame: CGRect(x:0, y:0, width:SCREEN_WIDTH, height:SCREEN_HEIGHT))
     
