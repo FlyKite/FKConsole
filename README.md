@@ -16,8 +16,8 @@ Swift 3.0 or later
 
 Install
 ---
-Copy FKConsole.swift to your project  
-~~install by cocoapods will be available soon~~
+*Manually:* Copy FKConsole.swift to your project  
+*CocoaPods:* `pod 'FKConsole'`
 
 How to use
 ---
