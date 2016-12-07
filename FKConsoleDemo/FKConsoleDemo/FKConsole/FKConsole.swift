@@ -69,6 +69,12 @@ public class FKConsole: UIView {
     }
     
     // MARK:- variables
+    public var verboseColor: UIColor! = UIColor.white
+    public var debugColor: UIColor! = UIColor(red: 0, green: 0.627, blue: 0.745, alpha: 1)
+    public var infoColor: UIColor! = UIColor(red: 0.514, green: 0.753, blue: 0.341, alpha: 1)
+    public var warningColor: UIColor! = UIColor.yellow
+    public var errorColor: UIColor! = UIColor.red
+    
     private var shownWindow: UIWindow?
     private var showGesture: UIGestureRecognizer!
     private var hideGesture: UIGestureRecognizer!
@@ -183,11 +189,6 @@ fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
         }
     }
     
-    public var verboseColor: UIColor! = UIColor.white
-    public var debugColor: UIColor! = UIColor(red: 0, green: 0.627, blue: 0.745, alpha: 1)
-    public var infoColor: UIColor! = UIColor(red: 0.514, green: 0.753, blue: 0.341, alpha: 1)
-    public var warningColor: UIColor! = UIColor.yellow
-    public var errorColor: UIColor! = UIColor.red
     private var logs = Array<Log>()
     
     // MARK:- LogView functions
@@ -220,15 +221,15 @@ fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
     private func logColor(level: Log.Level) -> UIColor! {
         switch level {
         case Log.Level.verbose:
-            return verboseColor
+            return FKConsole.console.verboseColor
         case Log.Level.debug:
-            return debugColor
+            return FKConsole.console.debugColor
         case Log.Level.info:
-            return infoColor
+            return FKConsole.console.infoColor
         case Log.Level.warning:
-            return warningColor
+            return FKConsole.console.warningColor
         case Log.Level.error:
-            return errorColor
+            return FKConsole.console.errorColor
         }
     }
     
