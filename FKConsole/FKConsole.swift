@@ -68,48 +68,24 @@ public class FKConsole: UIView {
         console.shownWindow = nil
     }
     
-    // MARK:- variables
-    private var shownWindow: UIWindow?
-    private var showGesture: UIGestureRecognizer!
-    private var hideGesture: UIGestureRecognizer!
-    private var animating: Bool! = false
-    
-    // Views
-    private var _logView: LogView!
-    private var logView: LogView! {
-        get {
-            if _logView == nil {
-                _logView = LogView(frame: CGRect(x:0, y:0, width:SCREEN_WIDTH, height:SCREEN_HEIGHT))
-                _logView.backgroundColor = UIColor.white
-                self.addSubview(_logView)
-            }
-            return _logView
-        }
-    }
-    
-    private var _closeButton: UIButton!
-    private var closeButton: UIButton! {
-        get {
-            if _closeButton == nil {
-                _closeButton = UIButton(type: UIButtonType.custom)
-                _closeButton.setTitle("×", for: UIControlState.normal)
-                _closeButton.titleLabel?.font = UIFont.systemFont(ofSize: 28)
-                _closeButton.setTitleColor(UIColor.black, for: UIControlState.normal)
-                _closeButton.setTitleColor(UIColor.gray, for: UIControlState.highlighted)
-                _closeButton.backgroundColor = UIColor.init(white: 1, alpha: 0.5)
-                _closeButton.layer.cornerRadius = 20
-                _closeButton.addTarget(self, action: #selector(hide), for: UIControlEvents.touchUpInside)
-                self.addSubview(_closeButton)
-            }
-            return _closeButton
-        }
-    }
-    
     // MARK:- functions
+    
+    /// Print Log object to FKConsole and Console in Xcode
+    ///
+    /// - parameter log: Log object
+    public func addLog(_ log: Log!) {
+        self.logView.addLog(log)
+        print(log.info, log.log, separator: "", terminator: "\n")
+    }
+    
+    /// Clear logs in FKConsole
+    public func clearLogs() {
+        self.logView.clearLogs()
+    }
     
     /// Show FKConsole in registered window
     final func show() {
-        if animating || superview != nil {
+        if self.animating || self.superview != nil {
             return
         }
         guard let window = self.shownWindow else {
@@ -118,10 +94,17 @@ public class FKConsole: UIView {
         
         self.animating = true
         
+        self.originalStatusBarStyle = UIApplication.shared.statusBarStyle
+        UIApplication.shared.statusBarStyle = .default
+        
         self.frame = CGRect(x: 0, y: SCREEN_HEIGHT, width: SCREEN_WIDTH, height: SCREEN_HEIGHT)
-        logView.frame = self.bounds
-        closeButton.frame = CGRect(x: SCREEN_WIDTH - 50, y: SCREEN_HEIGHT - 50, width: 40, height: 40)
+        
+        self.logView.frame = self.bounds
+        self.closeButton.frame = CGRect(x: SCREEN_WIDTH - 50, y: SCREEN_HEIGHT - 50, width: 40, height: 40)
+        self.clearButton.frame = CGRect(x: SCREEN_WIDTH - 100, y: SCREEN_HEIGHT - 50, width: 40, height: 40)
+        
         window.addSubview(self)
+        
         UIView.animate(withDuration: 0.3, animations: {
             self.frame = CGRect(x: 0, y: 0, width: SCREEN_WIDTH, height: SCREEN_HEIGHT)
         }, completion: { (finished) in
@@ -131,11 +114,15 @@ public class FKConsole: UIView {
     
     /// Hide FKConsole
     final func hide() {
-        if animating || superview == nil {
+        if self.animating || self.superview == nil {
             return
         }
         
         self.animating = true
+        
+        if let style = self.originalStatusBarStyle {
+            UIApplication.shared.statusBarStyle = style
+        }
         
         UIView.animate(withDuration: 0.3, animations: {
             self.frame = CGRect(x: 0, y: SCREEN_HEIGHT, width: SCREEN_WIDTH, height: SCREEN_HEIGHT)
@@ -145,33 +132,67 @@ public class FKConsole: UIView {
         })
     }
     
-    /// Print Log object to FKConsole and Console in Xcode
-    ///
-    /// - parameter log: Log object
-    public func addLog(_ log: Log!) {
-        logView.addLog(log)
-        print(log.info, log.log, separator: "", terminator: "\n")
-    }
+    // MARK:- variables
+    public var verboseColor: UIColor = UIColor.white
+    public var debugColor: UIColor = UIColor(red: 0, green: 0.627, blue: 0.745, alpha: 1)
+    public var infoColor: UIColor = UIColor(red: 0.514, green: 0.753, blue: 0.341, alpha: 1)
+    public var warningColor: UIColor = UIColor.yellow
+    public var errorColor: UIColor = UIColor.red
+    
+    private var shownWindow: UIWindow?
+    private var showGesture: UIGestureRecognizer!
+    private var hideGesture: UIGestureRecognizer!
+    private var animating: Bool! = false
+    private var originalStatusBarStyle: UIStatusBarStyle?
+    
+    private lazy var logView: LogView = {
+        let logView = LogView.init(frame: CGRect(x:0, y:0, width:SCREEN_WIDTH, height:SCREEN_HEIGHT))
+        logView.backgroundColor = UIColor.white
+        self.addSubview(logView)
+        return logView
+    }()
+    
+    private lazy var closeButton: UIButton = {
+        let closeButton = UIButton.init(type: UIButtonType.custom)
+        closeButton.setTitle("×", for: UIControlState.normal)
+        closeButton.titleLabel?.font = UIFont.systemFont(ofSize: 28)
+        closeButton.setTitleColor(UIColor.black, for: UIControlState.normal)
+        closeButton.setTitleColor(UIColor.gray, for: UIControlState.highlighted)
+        closeButton.backgroundColor = UIColor.init(white: 1, alpha: 0.5)
+        closeButton.layer.cornerRadius = 20
+        closeButton.addTarget(self, action: #selector(hide), for: UIControlEvents.touchUpInside)
+        self.addSubview(closeButton)
+        return closeButton
+    }()
+    
+    private lazy var clearButton: UIButton = {
+        let clearButton = UIButton.init(type: UIButtonType.custom)
+        clearButton.setTitle("C", for: UIControlState.normal)
+        clearButton.titleLabel?.font = UIFont.systemFont(ofSize: 28)
+        clearButton.setTitleColor(UIColor.black, for: UIControlState.normal)
+        clearButton.setTitleColor(UIColor.gray, for: UIControlState.highlighted)
+        clearButton.backgroundColor = UIColor.init(white: 1, alpha: 0.5)
+        clearButton.layer.cornerRadius = 20
+        clearButton.addTarget(self, action: #selector(clearLogs), for: UIControlEvents.touchUpInside)
+        self.addSubview(clearButton)
+        return clearButton
+    }()
+    
 }
 
 // MARK:- LogView
 fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
-    private var _tableView: UITableView!
-    private var tableView: UITableView! {
-        get {
-            if _tableView == nil {
-                _tableView = UITableView(frame: CGRect(x:0, y:20, width:SCREEN_WIDTH, height:SCREEN_HEIGHT - 20), style: UITableViewStyle.plain)
-                _tableView.delegate = self
-                _tableView.dataSource = self
-                _tableView.separatorStyle = UITableViewCellSeparatorStyle.none
-                _tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
-                _tableView.backgroundColor = UIColor.black
-                self.addSubview(_tableView)
-                self.backgroundColor = UIColor.white
-            }
-            return _tableView
-        }
-    }
+    private lazy var tableView: UITableView = {
+        let tableView = UITableView.init(frame: CGRect(x: 0, y: 20, width: SCREEN_WIDTH, height: SCREEN_HEIGHT - 20), style: UITableViewStyle.plain)
+        tableView.delegate = self
+        tableView.dataSource = self
+        tableView.separatorStyle = UITableViewCellSeparatorStyle.none
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        tableView.backgroundColor = UIColor.black
+        self.addSubview(tableView)
+        self.backgroundColor = UIColor.white
+        return tableView
+    }()
     
     public override var frame: CGRect {
         get {
@@ -179,56 +200,51 @@ fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
         }
         set(value) {
             super.frame = value
-            tableView.frame = CGRect(x:0, y:20, width:self.bounds.width, height:self.bounds.height - 20)
+            self.tableView.frame = CGRect(x: 0, y: 20, width: self.bounds.width, height: self.bounds.height - 20)
         }
     }
     
-    public var verboseColor: UIColor! = UIColor.white
-    public var debugColor: UIColor! = UIColor(red: 0, green: 0.627, blue: 0.745, alpha: 1)
-    public var infoColor: UIColor! = UIColor(red: 0.514, green: 0.753, blue: 0.341, alpha: 1)
-    public var warningColor: UIColor! = UIColor.yellow
-    public var errorColor: UIColor! = UIColor.red
     private var logs = Array<Log>()
     
     // MARK:- LogView functions
     public func addLog(_ log: Log!) {
-        logs.append(log)
+        self.logs.append(log)
         let indexPath = IndexPath(row: logs.count - 1, section: 0)
-        tableView.insertRows(at: [indexPath], with: UITableViewRowAnimation.none)
+        self.tableView.insertRows(at: [indexPath], with: UITableViewRowAnimation.none)
     }
     
-    public func clearLog() {
-        logs.removeAll()
-        tableView.reloadData()
+    public func clearLogs() {
+        self.logs.removeAll()
+        self.tableView.reloadData()
     }
     
     fileprivate func addHideGesture(gesture: UIGestureRecognizer!) {
         guard let ges = gesture else {
             return
         }
-        addGestureRecognizer(ges)
+        self.addGestureRecognizer(ges)
     }
     
     fileprivate func removeHideGesture(gesture: UIGestureRecognizer!) {
         guard let ges = gesture else {
             return
         }
-        removeGestureRecognizer(ges)
+        self.removeGestureRecognizer(ges)
     }
     
     // return the color of Log.Level
     private func logColor(level: Log.Level) -> UIColor! {
         switch level {
         case Log.Level.verbose:
-            return verboseColor
+            return FKConsole.console.verboseColor
         case Log.Level.debug:
-            return debugColor
+            return FKConsole.console.debugColor
         case Log.Level.info:
-            return infoColor
+            return FKConsole.console.infoColor
         case Log.Level.warning:
-            return warningColor
+            return FKConsole.console.warningColor
         case Log.Level.error:
-            return errorColor
+            return FKConsole.console.errorColor
         }
     }
     
@@ -243,11 +259,12 @@ fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
     
     // MARK:- tableView delegate & dataSource
     public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return logs.count
+        return self.logs.count
     }
     
     public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell")
+        cell?.selectionStyle = .none
         let log = logs[indexPath.row]
         var label: UILabel? = cell?.viewWithTag(1) as? UILabel
         if label == nil {
@@ -258,9 +275,11 @@ fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
         }
         label!.frame = CGRect(x: 0, y: 0, width: SCREEN_WIDTH, height: logHeight(log: log.info + log.log))
         label!.textColor = logColor(level: log.level)
+        
         let attrStr = NSMutableAttributedString.init(string: log.info + log.log)
         attrStr.addAttribute(NSForegroundColorAttributeName, value: UIColor.darkGray, range: NSRange(location: 0, length: log.info.lengthOfBytes(using: String.Encoding.utf8)))
         label!.attributedText = attrStr
+        
         cell?.backgroundColor = UIColor.black
         return cell!
     }
@@ -301,40 +320,40 @@ public class Log: NSObject {
     /// Print verbose log (white)
     ///
     /// - parameter log: log content string
-    public class func v(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
+    public class func v(_ log: Any?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
         let info = formatInfo(fileName: fileName, function: function, lineNumber: lineNumber)
-        addLog(log, info: info, level: Log.Level.verbose)
+        self.addLog(log, info: info, level: Log.Level.verbose)
     }
     /// Print debug log (blue)
     ///
     /// - parameter log: log content string
-    public class func d(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
+    public class func d(_ log: Any?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
         let info = formatInfo(fileName: fileName, function: function, lineNumber: lineNumber)
-        addLog(log, info: info, level: Log.Level.debug)
+        self.addLog(log, info: info, level: Log.Level.debug)
     }
     /// Print info log (green)
     ///
     /// - parameter log: log content string
-    public class func i(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
+    public class func i(_ log: Any?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
         let info = formatInfo(fileName: fileName, function: function, lineNumber: lineNumber)
-        addLog(log, info: info, level: Log.Level.info)
+        self.addLog(log, info: info, level: Log.Level.info)
     }
     /// Print warning log (yellow)
     ///
     /// - parameter log: log content string
-    public class func w(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
+    public class func w(_ log: Any?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
         let info = formatInfo(fileName: fileName, function: function, lineNumber: lineNumber)
-        addLog(log, info: info, level: Log.Level.warning)
+        self.addLog(log, info: info, level: Log.Level.warning)
     }
     /// Print error log (red)
     ///
     /// - parameter log: log content string
-    public class func e(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
+    public class func e(_ log: Any?, fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
         let info = formatInfo(fileName: fileName, function: function, lineNumber: lineNumber)
-        addLog(log, info: info, level: Log.Level.error)
+        self.addLog(log, info: info, level: Log.Level.error)
     }
     
-    private class func addLog(_ log: String?, info: String!, level: Log.Level!) {
+    private class func addLog(_ log: Any?, info: String!, level: Log.Level!) {
         let log = Log(info: info, log: log, level: level)
         FKConsole.console.addLog(log)
     }
@@ -353,13 +372,13 @@ public class Log: NSObject {
     var info: String!
     var log: String!
     var level: Log.Level!
-    init(info i: String!, log l: String?, level lv: Log.Level!) {
-        info = i
-        level = lv
+    init(info i: String!, log l: Any?, level lv: Log.Level!) {
+        self.info = i
+        self.level = lv
         guard let log_t = l else {
             self.log = ""
             return
         }
-        log = log_t
+        self.log = String.init(describing: log_t)
     }
 }
