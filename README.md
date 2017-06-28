@@ -18,6 +18,7 @@ Install
 ---
 **Manually:** Copy FKConsole.swift to your project  
 **CocoaPods:** `pod 'FKConsole'`
+(There are some problems with namespace, manually install is recommended)
 
 How to use
 ---
