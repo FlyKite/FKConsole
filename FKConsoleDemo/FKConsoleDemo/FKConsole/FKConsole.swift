@@ -21,23 +21,23 @@ public class FKConsole: UIView {
     /// Register FKConsole to window (Double tap with three fingers to toggle)
     ///
     /// - parameter window: The window will be registered
-    public class func register(window: UIWindow?) {
+    public class func register(to window: UIWindow?) {
         let showGesture = UITapGestureRecognizer.init()
         showGesture.numberOfTapsRequired = 2
         showGesture.numberOfTouchesRequired = 3
         let hideGesture = UITapGestureRecognizer.init()
         hideGesture.numberOfTapsRequired = 2
         hideGesture.numberOfTouchesRequired = 3
-        register(window: window, showGesture: showGesture, hideGesture: hideGesture)
+        register(to: window, showGesture: showGesture, hideGesture: hideGesture)
     }
-
+    
     /// Register FKConsole to window
     ///
     /// - parameter window: The window will be registered
     /// - parameter showGesture: The gesture to show FKConsole
     /// - parameter hideGesture: The gesture to hide FKConsole (Don't use SWIPE gesture for hideGesture, it won't be work)
-    public class func register(window wd: UIWindow?, showGesture: UIGestureRecognizer?, hideGesture: UIGestureRecognizer?) {
-        guard let window = wd else {
+    public class func register(to window: UIWindow?, showGesture: UIGestureRecognizer?, hideGesture: UIGestureRecognizer?) {
+        guard let window = window else {
             removeConsole()
             return
         }
@@ -54,7 +54,7 @@ public class FKConsole: UIView {
         if hideGesture != nil {
             console.hideGesture = hideGesture
             hideGesture!.addTarget(console, action: #selector(hide))
-            console.logView.addHideGesture(gesture: hideGesture!)
+            console.logView.addHideGesture(hideGesture!)
         }
     }
     
@@ -64,8 +64,20 @@ public class FKConsole: UIView {
             return
         }
         window.removeGestureRecognizer(console.showGesture)
-        console.logView.removeHideGesture(gesture: console.hideGesture)
+        console.logView.removeHideGesture(console.hideGesture)
         console.shownWindow = nil
+    }
+    
+    // MARK:- initial and deinit
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+        
+        self.logView.loadLogsFromDisk()
+        self.logView.registerObserver()
+    }
+    
+    required public init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
     
     // MARK:- functions
@@ -73,8 +85,12 @@ public class FKConsole: UIView {
     /// Print Log object to FKConsole and Console in Xcode
     ///
     /// - parameter log: Log object
-    public func addLog(_ log: Log!) {
-        self.logView.addLog(log)
+    public func addLog(_ log: Log) {
+        if Thread.current == Thread.main {
+            self.logView.addLog(log)
+        } else {
+            self.logView.performSelector(onMainThread: #selector(addLog(_:)), with: log, waitUntilDone: true)
+        }
         print(log.info, log.log, separator: "", terminator: "\n")
     }
     
@@ -142,7 +158,7 @@ public class FKConsole: UIView {
     private var shownWindow: UIWindow?
     private var showGesture: UIGestureRecognizer!
     private var hideGesture: UIGestureRecognizer!
-    private var animating: Bool! = false
+    private var animating: Bool = false
     private var originalStatusBarStyle: UIStatusBarStyle?
     
     private lazy var logView: LogView = {
@@ -205,9 +221,10 @@ fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
     }
     
     private var logs = Array<Log>()
+    private let logKey = "FKConsoleLog"
     
     // MARK:- LogView functions
-    public func addLog(_ log: Log!) {
+    public func addLog(_ log: Log) {
         self.logs.append(log)
         let indexPath = IndexPath(row: logs.count - 1, section: 0)
         self.tableView.insertRows(at: [indexPath], with: UITableViewRowAnimation.none)
@@ -218,22 +235,46 @@ fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
         self.tableView.reloadData()
     }
     
-    fileprivate func addHideGesture(gesture: UIGestureRecognizer!) {
-        guard let ges = gesture else {
-            return
-        }
-        self.addGestureRecognizer(ges)
+    public func saveLogs() {
+        let logsData = NSKeyedArchiver.archivedData(withRootObject: self.logs)
+        UserDefaults.standard.set(logsData, forKey: logKey)
+        UserDefaults.standard.synchronize()
     }
     
-    fileprivate func removeHideGesture(gesture: UIGestureRecognizer!) {
-        guard let ges = gesture else {
+    fileprivate func loadLogsFromDisk() {
+        guard let logsData = UserDefaults.standard.object(forKey: logKey) as? Data else {
             return
         }
-        self.removeGestureRecognizer(ges)
+        guard let logs = NSKeyedUnarchiver.unarchiveObject(with: logsData) as? [Log] else {
+            return
+        }
+        self.logs.removeAll()
+        self.logs.append(contentsOf: logs)
+    }
+    
+    // MARK: Register observer for App did enter background and App will Terminate
+    fileprivate func registerObserver() {
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(saveLogs),
+                                               name: NSNotification.Name.UIApplicationDidEnterBackground,
+                                               object: nil)
+        
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(saveLogs),
+                                               name: NSNotification.Name.UIApplicationWillTerminate,
+                                               object: nil)
+    }
+    
+    @objc fileprivate func addHideGesture(_ gesture: UIGestureRecognizer) {
+        self.addGestureRecognizer(gesture)
+    }
+    
+    @objc fileprivate func removeHideGesture(_ gesture: UIGestureRecognizer) {
+        self.removeGestureRecognizer(gesture)
     }
     
     // return the color of Log.Level
-    private func logColor(level: Log.Level) -> UIColor! {
+    private func logColor(level: Log.Level) -> UIColor {
         switch level {
         case Log.Level.verbose:
             return FKConsole.console.verboseColor
@@ -307,9 +348,9 @@ public func print(_ items: Any...) {
 }
 
 // MARK:- Log
-public class Log: NSObject {
+public class Log: NSObject, NSCoding {
     
-    enum Level {
+    enum Level: String {
         case verbose
         case debug
         case info
@@ -353,12 +394,12 @@ public class Log: NSObject {
         self.addLog(log, info: info, level: Log.Level.error)
     }
     
-    private class func addLog(_ log: Any?, info: String!, level: Log.Level!) {
+    private class func addLog(_ log: Any?, info: String, level: Log.Level) {
         let log = Log(info: info, log: log, level: level)
         FKConsole.console.addLog(log)
     }
     
-    private class func formatInfo(fileName: String!, function: String!, lineNumber: Int!) -> String! {
+    private class func formatInfo(fileName: String, function: String, lineNumber: Int) -> String {
         
         let className = (fileName as NSString).pathComponents.last!.replacingOccurrences(of: "swift", with: "")
         let fmt = DateFormatter()
@@ -369,10 +410,10 @@ public class Log: NSObject {
         return text
     }
     
-    var info: String!
-    var log: String!
-    var level: Log.Level!
-    init(info i: String!, log l: Any?, level lv: Log.Level!) {
+    var info: String
+    var log: String
+    var level: Log.Level
+    init(info i: String, log l: Any?, level lv: Log.Level) {
         self.info = i
         self.level = lv
         guard let log_t = l else {
@@ -380,5 +421,18 @@ public class Log: NSObject {
             return
         }
         self.log = String.init(describing: log_t)
+    }
+    
+    public required init?(coder aDecoder: NSCoder) {
+        self.info = aDecoder.decodeObject(forKey: "info") as! String
+        self.log = aDecoder.decodeObject(forKey: "log") as! String
+        let levelString = aDecoder.decodeObject(forKey: "level") as! String
+        self.level = Level.init(rawValue: levelString)!
+    }
+    
+    public func encode(with aCoder: NSCoder) {
+        aCoder.encode(self.info, forKey: "info")
+        aCoder.encode(self.log, forKey: "log")
+        aCoder.encode(self.level.rawValue, forKey: "level")
     }
 }
