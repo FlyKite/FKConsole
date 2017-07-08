@@ -16,8 +16,16 @@ Swift 3.0 or later
 ### Manually
 Copy FKConsole.swift to your project  
 ### CocoaPods
-`pod 'FKConsole'`
-(There are some problems with namespace, manually install is recommended)
+`pod 'FKConsole'`  
+There are some problems with namespace, you need import FKConsole when you use Log.  
+Also, you can copy the following code to your project, then you can use Log everywhere.
+```Swift
+import FKConsole
+
+class Log: FKConsole.Log {
+
+}
+```
 
 ## How to use
 First, register FKConsole in AppDelegate.
