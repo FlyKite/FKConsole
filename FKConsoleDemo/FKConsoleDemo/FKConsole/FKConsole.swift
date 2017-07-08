@@ -149,10 +149,24 @@ public class FKConsole: UIView {
     }
     
     // MARK:- variables
+    
+    /// Default is true, it determines whether to save logs to disk.
+    /// If you don't want to save logs to disk, please set it to false.
+    public var shouldSaveLogsToDisk = true
+    
+    /// Color of verbose logs, default is white.
     public var verboseColor: UIColor = UIColor.white
+    
+    /// Color of debug logs, default is blue.
     public var debugColor: UIColor = UIColor(red: 0, green: 0.627, blue: 0.745, alpha: 1)
+    
+    /// Color of info logs, default is green.
     public var infoColor: UIColor = UIColor(red: 0.514, green: 0.753, blue: 0.341, alpha: 1)
+    
+    /// Color of warning logs, default is yellow.
     public var warningColor: UIColor = UIColor.yellow
+    
+    /// Color of error logs, default is red.
     public var errorColor: UIColor = UIColor.red
     
     private var shownWindow: UIWindow?
@@ -236,12 +250,18 @@ fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
     }
     
     public func saveLogs() {
+        if !FKConsole.console.shouldSaveLogsToDisk {
+            return
+        }
         let logsData = NSKeyedArchiver.archivedData(withRootObject: self.logs)
         UserDefaults.standard.set(logsData, forKey: logKey)
         UserDefaults.standard.synchronize()
     }
     
     fileprivate func loadLogsFromDisk() {
+        if !FKConsole.console.shouldSaveLogsToDisk {
+            return
+        }
         guard let logsData = UserDefaults.standard.object(forKey: logKey) as? Data else {
             return
         }
