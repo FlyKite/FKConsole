@@ -12,7 +12,14 @@ import UIKit
 fileprivate let SCREEN_WIDTH = UIScreen.main.bounds.width
 fileprivate let SCREEN_HEIGHT = UIScreen.main.bounds.height
 
+// Handle uncaught exception
+fileprivate func exceptionHandler(_ exception: NSException) {
+    Log.e(exception)
+    FKConsole.console.logView.saveLogs()
+}
+
 public class FKConsole: UIView {
+    
     // MARK:- singleton
     static let console = FKConsole.init(frame: CGRect(x:0, y:0, width:SCREEN_WIDTH, height:SCREEN_HEIGHT))
     
@@ -72,7 +79,7 @@ public class FKConsole: UIView {
     public override init(frame: CGRect) {
         super.init(frame: frame)
         
-        self.logView.loadLogsFromDisk()
+        NSSetUncaughtExceptionHandler(exceptionHandler)
         self.logView.registerObserver()
     }
     
@@ -169,20 +176,28 @@ public class FKConsole: UIView {
     /// Color of error logs, default is red.
     public var errorColor: UIColor = UIColor.red
     
-    private var shownWindow: UIWindow?
-    private var showGesture: UIGestureRecognizer!
-    private var hideGesture: UIGestureRecognizer!
-    private var animating: Bool = false
-    private var originalStatusBarStyle: UIStatusBarStyle?
+    /// Font of logs, default is system font of 15 pix.
+    public var font: UIFont = UIFont.systemFont(ofSize: 15) {
+        didSet {
+            self.logView.textView.font = font
+        }
+    }
     
-    private lazy var logView: LogView = {
+    fileprivate var shownWindow: UIWindow?
+    fileprivate var showGesture: UIGestureRecognizer!
+    fileprivate var hideGesture: UIGestureRecognizer!
+    fileprivate var animating: Bool = false
+    fileprivate var originalStatusBarStyle: UIStatusBarStyle?
+    
+    fileprivate lazy var logView: LogView = {
         let logView = LogView.init(frame: CGRect(x:0, y:0, width:SCREEN_WIDTH, height:SCREEN_HEIGHT))
         logView.backgroundColor = UIColor.white
+        logView.textView.font = self.font
         self.addSubview(logView)
         return logView
     }()
     
-    private lazy var closeButton: UIButton = {
+    fileprivate lazy var closeButton: UIButton = {
         let closeButton = UIButton.init(type: UIButtonType.custom)
         closeButton.setTitle("×", for: UIControlState.normal)
         closeButton.titleLabel?.font = UIFont.systemFont(ofSize: 28)
@@ -195,7 +210,7 @@ public class FKConsole: UIView {
         return closeButton
     }()
     
-    private lazy var clearButton: UIButton = {
+    fileprivate lazy var clearButton: UIButton = {
         let clearButton = UIButton.init(type: UIButtonType.custom)
         clearButton.setTitle("C", for: UIControlState.normal)
         clearButton.titleLabel?.font = UIFont.systemFont(ofSize: 28)
@@ -211,17 +226,17 @@ public class FKConsole: UIView {
 }
 
 // MARK:- LogView
-fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
-    private lazy var tableView: UITableView = {
-        let tableView = UITableView.init(frame: CGRect(x: 0, y: 20, width: SCREEN_WIDTH, height: SCREEN_HEIGHT - 20), style: UITableViewStyle.plain)
-        tableView.delegate = self
-        tableView.dataSource = self
-        tableView.separatorStyle = UITableViewCellSeparatorStyle.none
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
-        tableView.backgroundColor = UIColor.black
-        self.addSubview(tableView)
+fileprivate class LogView: UIView {
+    
+    fileprivate lazy var textView: UITextView = {
+        let textView = UITextView.init()
+        textView.frame = CGRect(x: 0, y: 20, width: SCREEN_WIDTH, height: SCREEN_HEIGHT - 20)
+        textView.backgroundColor = UIColor.black
+        textView.textColor = UIColor.darkGray
+        textView.isEditable = false
+        self.addSubview(textView)
         self.backgroundColor = UIColor.white
-        return tableView
+        return textView
     }()
     
     public override var frame: CGRect {
@@ -230,46 +245,50 @@ fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
         }
         set(value) {
             super.frame = value
-            self.tableView.frame = CGRect(x: 0, y: 20, width: self.bounds.width, height: self.bounds.height - 20)
+            self.textView.frame = CGRect(x: 0, y: 20, width: self.bounds.width, height: self.bounds.height - 20)
         }
     }
     
-    private var logs = Array<Log>()
     private let logKey = "FKConsoleLog"
+    private var logsAttributedString = NSMutableAttributedString.init(string: "")
+    private lazy var logs: [Log] = {
+        var logs = [Log]()
+        if !FKConsole.console.shouldSaveLogsToDisk {
+            return logs
+        }
+        guard let logsData = UserDefaults.standard.object(forKey: self.logKey) as? Data else {
+            return logs
+        }
+        guard let logsArray = NSKeyedUnarchiver.unarchiveObject(with: logsData) as? [Log] else {
+            return logs
+        }
+        for log in logsArray {
+            self.logsAttributedString.append(self.handleLog(log))
+        }
+        logs.append(contentsOf: logsArray)
+        return logs
+    }()
     
     // MARK:- LogView functions
     public func addLog(_ log: Log) {
         self.logs.append(log)
-        let indexPath = IndexPath(row: logs.count - 1, section: 0)
-        self.tableView.insertRows(at: [indexPath], with: UITableViewRowAnimation.none)
+        self.logsAttributedString.append(self.handleLog(log))
+        self.textView.attributedText = self.logsAttributedString
     }
     
     public func clearLogs() {
         self.logs.removeAll()
-        self.tableView.reloadData()
+        self.logsAttributedString = NSMutableAttributedString.init(string: "")
+        self.textView.attributedText = self.logsAttributedString
     }
     
-    public func saveLogs() {
+    @objc fileprivate func saveLogs() {
         if !FKConsole.console.shouldSaveLogsToDisk {
             return
         }
         let logsData = NSKeyedArchiver.archivedData(withRootObject: self.logs)
         UserDefaults.standard.set(logsData, forKey: logKey)
         UserDefaults.standard.synchronize()
-    }
-    
-    fileprivate func loadLogsFromDisk() {
-        if !FKConsole.console.shouldSaveLogsToDisk {
-            return
-        }
-        guard let logsData = UserDefaults.standard.object(forKey: logKey) as? Data else {
-            return
-        }
-        guard let logs = NSKeyedUnarchiver.unarchiveObject(with: logsData) as? [Log] else {
-            return
-        }
-        self.logs.removeAll()
-        self.logs.append(contentsOf: logs)
     }
     
     // MARK: Register observer for App did enter background and App will Terminate
@@ -293,6 +312,17 @@ fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
         self.removeGestureRecognizer(gesture)
     }
     
+    private func handleLog(_ log: Log) -> NSAttributedString {
+        let aStr = NSMutableAttributedString.init(string: log.info + log.log + "\n")
+        aStr.addAttribute(NSForegroundColorAttributeName,
+                          value: UIColor.darkGray,
+                          range: NSMakeRange(0, log.info.characters.count + log.log.characters.count))
+        aStr.addAttribute(NSForegroundColorAttributeName,
+                          value: self.logColor(level: log.level),
+                          range: NSMakeRange(log.info.characters.count, log.log.characters.count))
+        return aStr
+    }
+    
     // return the color of Log.Level
     private func logColor(level: Log.Level) -> UIColor {
         switch level {
@@ -309,45 +339,6 @@ fileprivate class LogView: UIView, UITableViewDelegate, UITableViewDataSource {
         }
     }
     
-    private func logHeight(log: String) -> CGFloat {
-        let size = CGSize(width: SCREEN_WIDTH, height: CGFloat(MAXFLOAT))
-        let bounds = log.boundingRect(with: size,
-                                      options: NSStringDrawingOptions.usesLineFragmentOrigin,
-                                      attributes: [NSFontAttributeName: UIFont.systemFont(ofSize: 15)],
-                                      context: nil)
-        return bounds.height
-    }
-    
-    // MARK:- tableView delegate & dataSource
-    public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.logs.count
-    }
-    
-    public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell")
-        cell?.selectionStyle = .none
-        let log = logs[indexPath.row]
-        var label: UILabel? = cell?.viewWithTag(1) as? UILabel
-        if label == nil {
-            label = UILabel()
-            label?.font = UIFont.systemFont(ofSize: 15)
-            label?.numberOfLines = 0
-            cell?.addSubview(label!)
-        }
-        label!.frame = CGRect(x: 0, y: 0, width: SCREEN_WIDTH, height: logHeight(log: log.info + log.log))
-        label!.textColor = logColor(level: log.level)
-        
-        let attrStr = NSMutableAttributedString.init(string: log.info + log.log)
-        attrStr.addAttribute(NSForegroundColorAttributeName, value: UIColor.darkGray, range: NSRange(location: 0, length: log.info.lengthOfBytes(using: String.Encoding.utf8)))
-        label!.attributedText = attrStr
-        
-        cell?.backgroundColor = UIColor.black
-        return cell!
-    }
-    
-    public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return logHeight(log: logs[indexPath.row].info + logs[indexPath.row].log)
-    }
 }
 
 // MARK:- Print
