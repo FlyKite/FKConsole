@@ -270,6 +270,13 @@ fileprivate class LogView: UIView {
     }()
     
     // MARK:- LogView functions
+    public func setFont(_ font: UIFont) {
+        let range = NSMakeRange(0, self.logsAttributedString.length)
+        self.logsAttributedString.addAttribute(NSFontAttributeName,
+                                               value: font,
+                                               range: range)
+    }
+    
     public func addLog(_ log: Log) {
         self.logs.append(log)
         self.logsAttributedString.append(self.handleLog(log))
@@ -314,9 +321,12 @@ fileprivate class LogView: UIView {
     
     private func handleLog(_ log: Log) -> NSAttributedString {
         let aStr = NSMutableAttributedString.init(string: log.info + log.log + "\n")
-        aStr.addAttribute(NSForegroundColorAttributeName,
-                          value: UIColor.darkGray,
-                          range: NSMakeRange(0, log.info.characters.count + log.log.characters.count))
+        let paragraphStyle = NSMutableParagraphStyle.init()
+        paragraphStyle.lineSpacing = 5
+        aStr.addAttributes([NSParagraphStyleAttributeName: paragraphStyle,
+                            NSFontAttributeName: FKConsole.console.font,
+                            NSForegroundColorAttributeName: UIColor.darkGray],
+                           range: NSMakeRange(0, log.info.characters.count + log.log.characters.count))
         aStr.addAttribute(NSForegroundColorAttributeName,
                           value: self.logColor(level: log.level),
                           range: NSMakeRange(log.info.characters.count, log.log.characters.count))
