@@ -117,12 +117,11 @@ public class FKConsole: UIView {
         
         self.animating = true
         
-        self.originalStatusBarStyle = UIApplication.shared.statusBarStyle
-        UIApplication.shared.statusBarStyle = .default
-        
         self.frame = CGRect(x: 0, y: SCREEN_HEIGHT, width: SCREEN_WIDTH, height: SCREEN_HEIGHT)
         
         self.logView.frame = self.bounds
+        let statusBarIsLightContent = UIApplication.shared.statusBarStyle == .lightContent
+        self.logView.backgroundColor = statusBarIsLightContent ? UIColor.black : UIColor.white
         self.closeButton.frame = CGRect(x: SCREEN_WIDTH - 50, y: SCREEN_HEIGHT - 50, width: 40, height: 40)
         self.clearButton.frame = CGRect(x: SCREEN_WIDTH - 100, y: SCREEN_HEIGHT - 50, width: 40, height: 40)
         
@@ -142,10 +141,6 @@ public class FKConsole: UIView {
         }
         
         self.animating = true
-        
-        if let style = self.originalStatusBarStyle {
-            UIApplication.shared.statusBarStyle = style
-        }
         
         UIView.animate(withDuration: 0.3, animations: {
             self.frame = CGRect(x: 0, y: SCREEN_HEIGHT, width: SCREEN_WIDTH, height: SCREEN_HEIGHT)
@@ -187,7 +182,6 @@ public class FKConsole: UIView {
     fileprivate var showGesture: UIGestureRecognizer!
     fileprivate var hideGesture: UIGestureRecognizer!
     fileprivate var animating: Bool = false
-    fileprivate var originalStatusBarStyle: UIStatusBarStyle?
     
     fileprivate lazy var logView: LogView = {
         let logView = LogView.init(frame: CGRect(x:0, y:0, width:SCREEN_WIDTH, height:SCREEN_HEIGHT))
@@ -235,7 +229,6 @@ fileprivate class LogView: UIView {
         textView.textColor = UIColor.darkGray
         textView.isEditable = false
         self.addSubview(textView)
-        self.backgroundColor = UIColor.white
         return textView
     }()
     
@@ -266,6 +259,8 @@ fileprivate class LogView: UIView {
             self.logsAttributedString.append(self.handleLog(log))
         }
         logs.append(contentsOf: logsArray)
+        self.textView.attributedText = self.logsAttributedString
+        self.scrollToBottom()
         return logs
     }()
     
@@ -278,15 +273,31 @@ fileprivate class LogView: UIView {
     }
     
     public func addLog(_ log: Log) {
+        let offsetY = self.textView.contentOffset.y
+        let bottomOffsetY = self.textView.contentSize.height - self.textView.frame.height
+        var shouldScrollToBottom = false
+        if offsetY >= bottomOffsetY - 100 {
+            shouldScrollToBottom = true
+        }
         self.logs.append(log)
         self.logsAttributedString.append(self.handleLog(log))
         self.textView.attributedText = self.logsAttributedString
+        if shouldScrollToBottom {
+            scrollToBottom()
+        }
     }
     
     public func clearLogs() {
         self.logs.removeAll()
         self.logsAttributedString = NSMutableAttributedString.init(string: "")
         self.textView.attributedText = self.logsAttributedString
+    }
+    
+    public func scrollToBottom() {
+        UIView.animate(withDuration: 0.25, animations: {
+            let bottomOffsetY = self.textView.contentSize.height - self.textView.frame.height
+            self.textView.contentOffset = CGPoint(x: 0, y: bottomOffsetY)
+        })
     }
     
     @objc fileprivate func saveLogs() {
@@ -298,11 +309,11 @@ fileprivate class LogView: UIView {
         UserDefaults.standard.synchronize()
     }
     
-    // MARK: Register observer for App did enter background and App will Terminate
+    // MARK: Register observer for App will resign active and App will Terminate
     fileprivate func registerObserver() {
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(saveLogs),
-                                               name: NSNotification.Name.UIApplicationDidEnterBackground,
+                                               name: NSNotification.Name.UIApplicationWillResignActive,
                                                object: nil)
         
         NotificationCenter.default.addObserver(self,
