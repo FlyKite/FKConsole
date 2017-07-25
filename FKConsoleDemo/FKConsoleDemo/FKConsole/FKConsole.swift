@@ -90,15 +90,19 @@ public class FKConsole: UIView {
     // MARK:- functions
     
     /// Print Log object to FKConsole and Console in Xcode
+    /// If not registered to any window, only print to Console in Xcode
     ///
     /// - parameter log: Log object
     public func addLog(_ log: Log) {
+        print(log.info, log.log, separator: "", terminator: "\n")
+        if self.shownWindow == nil {
+            return
+        }
         if Thread.current == Thread.main {
             self.logView.addLog(log)
         } else {
             self.logView.performSelector(onMainThread: #selector(addLog(_:)), with: log, waitUntilDone: true)
         }
-        print(log.info, log.log, separator: "", terminator: "\n")
     }
     
     /// Clear logs in FKConsole
@@ -238,7 +242,9 @@ fileprivate class LogView: UIView {
         }
         set(value) {
             super.frame = value
-            self.textView.frame = CGRect(x: 0, y: 20, width: self.bounds.width, height: self.bounds.height - 20)
+            let isStatusBarHidden = UIApplication.shared.isStatusBarHidden
+            let statusBarHeight: CGFloat = isStatusBarHidden ? 0 : 20
+            self.textView.frame = CGRect(x: 0, y: statusBarHeight, width: self.bounds.width, height: self.bounds.height - statusBarHeight)
         }
     }
     
