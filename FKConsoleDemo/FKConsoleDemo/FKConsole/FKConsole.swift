@@ -94,7 +94,7 @@ public class FKConsole: UIView {
     ///
     /// - parameter log: Log object
     public func addLog(_ log: Log) {
-        print(log.info, log.log, separator: "", terminator: "\n")
+        print("\(log.level.rawValue)\(log.info)", log.log, separator: "", terminator: "\n")
         if self.shownWindow == nil {
             return
         }
@@ -389,11 +389,11 @@ public func print(_ items: Any...) {
 public class Log: NSObject, NSCoding {
     
     enum Level: String {
-        case verbose
-        case debug
-        case info
-        case warning
-        case error
+        case verbose    = "✉️"
+        case debug      = "🌐"
+        case info       = "📟"
+        case warning    = "⚠️"
+        case error      = "❌"
     }
     
     /// Print verbose log (white)
