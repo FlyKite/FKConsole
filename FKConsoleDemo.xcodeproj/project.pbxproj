@@ -72,7 +72,8 @@
 			children = (
 				FD131CE51DF173EB00243FAD /* FKConsole.swift */,
 			);
-			path = FKConsole;
+			name = FKConsole;
+			path = ../FKConsole;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -314,6 +315,7 @@
 				FD131CE31DF1739B00243FAD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
