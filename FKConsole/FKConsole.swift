@@ -94,7 +94,7 @@ public class FKConsole: UIView {
     ///
     /// - parameter log: Log object
     public func addLog(_ log: Log) {
-        print(log.info, log.log, separator: "", terminator: "\n")
+        print("\(self.mark(for: log.level))\(log.info)", log.log, separator: "", terminator: "\n")
         if self.shownWindow == nil {
             return
         }
@@ -102,6 +102,16 @@ public class FKConsole: UIView {
             self.logView.addLog(log)
         } else {
             self.logView.performSelector(onMainThread: #selector(addLog(_:)), with: log, waitUntilDone: true)
+        }
+    }
+    
+    fileprivate func mark(for level: Log.Level) -> String {
+        switch level {
+        case .verbose:  return verboseMark
+        case .debug:    return debugMark
+        case .info:     return infoMark
+        case .warning:  return warningMark
+        case .error:    return errorMark
         }
     }
     
@@ -162,18 +172,28 @@ public class FKConsole: UIView {
     
     /// Color of verbose logs, default is white.
     public var verboseColor: UIColor = UIColor.white
+    /// Emoji mark of verbose logs, default is ✉️
+    public var verboseMark: String = "✉️"
     
     /// Color of debug logs, default is blue.
     public var debugColor: UIColor = UIColor(red: 0, green: 0.627, blue: 0.745, alpha: 1)
+    /// Emoji mark of debug logs, default is 🌐
+    public var debugMark: String = "🌐"
     
     /// Color of info logs, default is green.
     public var infoColor: UIColor = UIColor(red: 0.514, green: 0.753, blue: 0.341, alpha: 1)
+    /// Emoji mark of info logs, default is 📟
+    public var infoMark: String = "📟"
     
     /// Color of warning logs, default is yellow.
     public var warningColor: UIColor = UIColor.yellow
+    /// Emoji mark of warning logs, default is ⚠️
+    public var warningMark: String = "⚠️"
     
     /// Color of error logs, default is red.
     public var errorColor: UIColor = UIColor.red
+    /// Emoji mark of error logs, default is ❌
+    public var errorMark: String = "❌"
     
     /// Font of logs, default is system font of 15 pix.
     public var font: UIFont = UIFont.systemFont(ofSize: 15) {
