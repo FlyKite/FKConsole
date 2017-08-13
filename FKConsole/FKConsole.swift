@@ -12,12 +12,6 @@ import UIKit
 fileprivate let SCREEN_WIDTH = UIScreen.main.bounds.width
 fileprivate let SCREEN_HEIGHT = UIScreen.main.bounds.height
 
-// Handle uncaught exception
-fileprivate func exceptionHandler(_ exception: NSException) {
-    Log.e(exception)
-    FKConsole.console.logView.saveLogs()
-}
-
 public class FKConsole: UIView {
     
     // MARK:- singleton
@@ -79,7 +73,6 @@ public class FKConsole: UIView {
     public override init(frame: CGRect) {
         super.init(frame: frame)
         
-        NSSetUncaughtExceptionHandler(exceptionHandler)
         self.logView.registerObserver()
     }
     
