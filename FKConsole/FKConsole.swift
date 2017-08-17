@@ -91,10 +91,8 @@ public class FKConsole: UIView {
         if self.shownWindow == nil {
             return
         }
-        if Thread.current == Thread.main {
+        self.logQueue.addOperation {
             self.logView.addLog(log)
-        } else {
-            self.logView.performSelector(onMainThread: #selector(addLog(_:)), with: log, waitUntilDone: true)
         }
     }
     
@@ -127,6 +125,7 @@ public class FKConsole: UIView {
         self.frame = CGRect(x: 0, y: SCREEN_HEIGHT, width: SCREEN_WIDTH, height: SCREEN_HEIGHT)
         
         self.logView.frame = self.bounds
+        self.logView.reloadLogText()
         let statusBarIsLightContent = UIApplication.shared.statusBarStyle == .lightContent
         self.logView.backgroundColor = statusBarIsLightContent ? UIColor.black : UIColor.white
         self.closeButton.frame = CGRect(x: SCREEN_WIDTH - 50, y: SCREEN_HEIGHT - 50, width: 40, height: 40)
@@ -198,6 +197,7 @@ public class FKConsole: UIView {
     fileprivate var shownWindow: UIWindow?
     fileprivate var showGesture: UIGestureRecognizer!
     fileprivate var hideGesture: UIGestureRecognizer!
+    fileprivate var logQueue = OperationQueue()
     fileprivate var animating: Bool = false
     
     fileprivate lazy var logView: LogView = {
@@ -278,8 +278,6 @@ fileprivate class LogView: UIView {
             self.logsAttributedString.append(self.handleLog(log))
         }
         logs.append(contentsOf: logsArray)
-        self.textView.attributedText = self.logsAttributedString
-        self.scrollToBottom()
         return logs
     }()
     
@@ -300,9 +298,17 @@ fileprivate class LogView: UIView {
         }
         self.logs.append(log)
         self.logsAttributedString.append(self.handleLog(log))
-        self.textView.attributedText = self.logsAttributedString
-        if shouldScrollToBottom {
-            scrollToBottom()
+        if FKConsole.console.superview != nil {
+            self.reloadLogText(shouldScrollToBottom)
+        }
+    }
+    
+    public func reloadLogText(_ shouldScrollToBottom: Bool = true) {
+        DispatchQueue.main.async {
+            self.textView.attributedText = self.logsAttributedString
+            if shouldScrollToBottom {
+                self.scrollToBottom()
+            }
         }
     }
     
