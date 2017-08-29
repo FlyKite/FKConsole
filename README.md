@@ -87,13 +87,13 @@ public class Log: NSObject {
 ```
 ### Customize
 Set `shouldSaveLogsToDisk` to false to let the FKConsole not to save logs to disk.
-```
+```Swift
     /// Default is true, it determines whether to save logs to disk.
     /// If you don't want to save logs to disk, please set it to false.
     public var shouldSaveLogsToDisk: Bool
 ```
 You can also customize the color of diffirent log levels.
-```
+```Swift
     /// Color of verbose logs, default is white.
     public var verboseColor: UIColor
     /// Emoji mark of verbose logs, default is ✉️
