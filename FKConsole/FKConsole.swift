@@ -391,7 +391,7 @@ fileprivate class LogView: UIView {
 /// Override to intercept print method
 /// It's not recommended, please use Log.v(xxx) instead.
 /// If you don't want to use this method, please remove it.
-public func print(_ items: Any...) {
+public func print(_ items: Any..., fileName: String = #file, function: String = #function, lineNumber: Int = #line) {
     var text = ""
     for index in 1...items.count {
         text.append(String(describing: items[index - 1]))
@@ -401,7 +401,8 @@ public func print(_ items: Any...) {
             text.append(" ")
         }
     }
-    Log.v(text)
+    Log.v(text, fileName: fileName, function: function, lineNumber: lineNumber)
+    NSLog("")
 }
 
 // MARK:- Log
