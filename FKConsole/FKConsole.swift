@@ -22,7 +22,7 @@ public class FKConsole: UIView {
     /// Register FKConsole to window (Double tap with three fingers to toggle)
     ///
     /// - parameter window: The window will be registered
-    public class func register(to window: UIWindow?) {
+    public class func easyRegister(to window: UIWindow?) {
         let showGesture = UITapGestureRecognizer.init()
         showGesture.numberOfTapsRequired = 2
         showGesture.numberOfTouchesRequired = 3
@@ -35,9 +35,9 @@ public class FKConsole: UIView {
     /// Register FKConsole to window
     ///
     /// - parameter window: The window will be registered
-    /// - parameter showGesture: The gesture to show FKConsole
+    /// - parameter showGesture: The gesture to show FKConsole, use show() function to show console if showGesture is nil.
     /// - parameter hideGesture: The gesture to hide FKConsole (Don't use SWIPE gesture for hideGesture, it won't be work)
-    public class func register(to window: UIWindow?, showGesture: UIGestureRecognizer?, hideGesture: UIGestureRecognizer?) {
+    public class func register(to window: UIWindow?, showGesture: UIGestureRecognizer? = nil, hideGesture: UIGestureRecognizer? = nil) {
         guard let window = window else {
             removeConsole()
             return
@@ -47,15 +47,15 @@ public class FKConsole: UIView {
         console.shownWindow = window
         
         // deal with gestures
-        if showGesture != nil {
+        if let showGesture = showGesture {
             console.showGesture = showGesture
-            showGesture!.addTarget(console, action: #selector(show))
-            window.addGestureRecognizer(showGesture!)
+            showGesture.addTarget(console, action: #selector(show))
+            window.addGestureRecognizer(showGesture)
         }
-        if hideGesture != nil {
+        if let hideGesture = hideGesture {
             console.hideGesture = hideGesture
-            hideGesture!.addTarget(console, action: #selector(hide))
-            console.logView.addHideGesture(hideGesture!)
+            hideGesture.addTarget(console, action: #selector(hide))
+            console.logView.addHideGesture(hideGesture)
         }
     }
     
@@ -64,13 +64,19 @@ public class FKConsole: UIView {
         guard let window = console.shownWindow else {
             return
         }
-        window.removeGestureRecognizer(console.showGesture)
-        console.logView.removeHideGesture(console.hideGesture)
+        if let showGesture = console.showGesture {
+            window.removeGestureRecognizer(showGesture)
+            console.showGesture = nil
+        }
+        if let hideGesture = console.hideGesture {
+            console.logView.removeHideGesture(hideGesture)
+            console.hideGesture = nil
+        }
         console.shownWindow = nil
     }
     
     // MARK:- initial and deinit
-    public override init(frame: CGRect) {
+    fileprivate override init(frame: CGRect) {
         super.init(frame: frame)
         
         self.logView.registerObserver()
@@ -93,16 +99,6 @@ public class FKConsole: UIView {
         }
         self.logQueue.addOperation {
             self.logView.addLog(log)
-        }
-    }
-    
-    fileprivate func mark(for level: Log.Level) -> String {
-        switch level {
-        case .verbose:  return verboseMark
-        case .debug:    return debugMark
-        case .info:     return infoMark
-        case .warning:  return warningMark
-        case .error:    return errorMark
         }
     }
     
@@ -156,11 +152,21 @@ public class FKConsole: UIView {
         })
     }
     
+    fileprivate func mark(for level: Log.Level) -> String {
+        switch level {
+        case .verbose:  return verboseMark
+        case .debug:    return debugMark
+        case .info:     return infoMark
+        case .warning:  return warningMark
+        case .error:    return errorMark
+        }
+    }
+    
     // MARK:- variables
     
     /// Default is true, it determines whether to save logs to disk.
     /// If you don't want to save logs to disk, please set it to false.
-    public var shouldSaveLogsToDisk = true
+    public var shouldSaveLogsToDisk: Bool = true
     
     /// Color of verbose logs, default is white.
     public var verboseColor: UIColor = UIColor.white
@@ -195,8 +201,8 @@ public class FKConsole: UIView {
     }
     
     fileprivate var shownWindow: UIWindow?
-    fileprivate var showGesture: UIGestureRecognizer!
-    fileprivate var hideGesture: UIGestureRecognizer!
+    fileprivate var showGesture: UIGestureRecognizer?
+    fileprivate var hideGesture: UIGestureRecognizer?
     fileprivate var logQueue = OperationQueue()
     fileprivate var animating: Bool = false
     
@@ -393,8 +399,8 @@ fileprivate class LogView: UIView {
 /// If you don't want to use this method, please remove it.
 public func print(_ items: Any...) {
     var text = ""
-    for index in 1...items.count {
-        text.append(String(describing: items[index - 1]))
+    for index in 0 ..< items.count {
+        text.append(String(describing: items[index]))
         if index == items.count - 1 {
             text.append("\n")
         } else {
@@ -470,14 +476,14 @@ public class Log: NSObject, NSCoding {
     var info: String
     var log: String
     var level: Log.Level
-    init(info i: String, log l: Any?, level lv: Log.Level) {
-        self.info = i
-        self.level = lv
-        guard let log_t = l else {
+    init(info: String, log: Any?, level: Log.Level) {
+        self.info = info
+        self.level = level
+        guard let log = log else {
             self.log = ""
             return
         }
-        self.log = String.init(describing: log_t)
+        self.log = String.init(describing: log)
     }
     
     public required init?(coder aDecoder: NSCoder) {

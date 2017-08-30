@@ -18,10 +18,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Override point for customization after application launch.
         
         // register FKConsole with default gesture (Double tap with three fingers to toggle)
+        FKConsole.easyRegister(to: self.window)
+        
+        /*
+        // Register FKConsole without any gesture
         FKConsole.register(to: self.window)
         
         // Register FKConsole with custom gesture
-        /*
         let showGesture = UITapGestureRecognizer.init()
         showGesture.numberOfTapsRequired = 2
         showGesture.numberOfTouchesRequired = 3
