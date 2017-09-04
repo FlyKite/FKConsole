@@ -15,7 +15,21 @@ fileprivate let SCREEN_HEIGHT = UIScreen.main.bounds.height
 public class FKConsole: UIView {
     
     // MARK:- singleton
-    static let console = FKConsole.init(frame: CGRect(x:0, y:0, width:SCREEN_WIDTH, height:SCREEN_HEIGHT))
+    static let console: FKConsole = {
+        if Thread.current == Thread.main {
+            return FKConsole.init(frame: CGRect(x:0, y:0, width:SCREEN_WIDTH, height:SCREEN_HEIGHT))
+        } else {
+            // initial must be called in main thread
+            var console: FKConsole!
+            let semaphore = DispatchSemaphore.init(value: 0)
+            DispatchQueue.main.async {
+                console = FKConsole.init(frame: CGRect(x:0, y:0, width:SCREEN_WIDTH, height:SCREEN_HEIGHT))
+                semaphore.signal()
+            }
+            semaphore.wait()
+            return console
+        }
+    }()
     
     // MARK:- register functions
     
