@@ -29,22 +29,21 @@ class Log: FKConsole.Log {
 ```
 
 ## How to use
-First, register FKConsole in AppDelegate.application(_:didFinishLaunchingWithOptions:).
+First, register FKConsole in AppDelegate.application(_:didFinishLaunchingWithOptions:).  
+
+Register FKConsole with default gesture (Double tap with three fingers to toggle).
 ```Swift
-    // register FKConsole with default gesture (Double tap with three fingers to toggle)
-    FKConsole.easyRegister(to: self.window)
-    
-    // Register FKConsole without any gesture, use show() function to show FKConsole in your code
-    FKConsole.register(to: self.window)
-    
-    // Register FKConsole with custom gesture
-    let showGesture = UITapGestureRecognizer.init()
-    showGesture.numberOfTapsRequired = 2
-    showGesture.numberOfTouchesRequired = 3
-    let hideGesture = UILongPressGestureRecognizer.init()
-    hideGesture.minimumPressDuration = 1.0
-    hideGesture.numberOfTouchesRequired = 3
-    FKConsole.register(window: self.window, showGesture: showGesture, hideGesture: hideGesture)
+FKConsole.easyRegister(to: UIWindow)
+```
+  
+Register FKConsole without any gesture, use show() function to show FKConsole in your code.
+```Swift
+FKConsole.register(to: UIWindow)
+```
+  
+Register FKConsole with custom gestures, the gestures are nullable.
+```Swift
+FKConsole.register(window: UIWindow, showGesture: UIGestureRecognizer, hideGesture: UIGestureRecognizer)
 ```
 
 Then you can use these functions to print log.
