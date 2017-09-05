@@ -57,27 +57,27 @@ public class Log: NSObject {
     /// Print verbose log (white)
     ///
     /// - parameter log: log content string
-    public class func v(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line)
+    public class func v(_ log: String?)
     
     /// Print debug log (blue)
     ///
     /// - parameter log: log content string
-    public class func d(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line)
+    public class func d(_ log: String?)
     
     /// Print info log (green)
     ///
     /// - parameter log: log content string
-    public class func i(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line)
+    public class func i(_ log: String?)
     
     /// Print warning log (yellow)
     ///
     /// - parameter log: log content string
-    public class func w(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line)
+    public class func w(_ log: String?)
     
     /// Print error log (red)
     ///
     /// - parameter log: log content string
-    public class func e(_ log: String?, fileName: String = #file, function: String = #function, lineNumber: Int = #line)
+    public class func e(_ log: String?)
 }
 ```
 ### Customize
