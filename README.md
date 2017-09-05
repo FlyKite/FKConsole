@@ -41,9 +41,9 @@ Register FKConsole without any gesture, use show() function to show FKConsole in
 FKConsole.register(to: UIWindow)
 ```
   
-Register FKConsole with custom gestures, the gestures are nullable.
+Register FKConsole with custom gestures.
 ```Swift
-FKConsole.register(window: UIWindow, showGesture: UIGestureRecognizer, hideGesture: UIGestureRecognizer)
+FKConsole.register(window: UIWindow, showGesture: UIGestureRecognizer?, hideGesture: UIGestureRecognizer?)
 ```
 
 Then you can use these functions to print log.
